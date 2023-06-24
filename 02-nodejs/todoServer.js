@@ -50,35 +50,80 @@ app.use(bodyParser.json());
 app.listen(PORT);
 let todos = [];
 app.get("/todos", (req, res) => {
-  res.json(todos);
+  console.log("new call");
+  if (todos.length == 0) {
+    console.log("i am here");
+    fs.readFile("todos.json", "utf-8", (err, data) => {
+      if (err) throw err;
+      todos = JSON.parse(data);
+      console.log(todos);
+      res.json(todos);
+    });
+  } else {
+    res.json(todos);
+  }
 });
 
 app.get("/todos/:id", (req, res) => {
+  if (todos.length == 0) {
+    console.log("i am here");
+    fs.readFile("todos.json", "utf-8", (err, data) => {
+      if (err) throw err;
+      todos = JSON.parse(data);
+    });
+  }
   let filteredTodo = todos.find((todo) => todo.id == req.params.id);
   if (filteredTodo) res.json({ ...filteredTodo });
   else res.sendStatus(404);
 });
 
 app.post("/todos", (req, res) => {
-  const uniqueId = uuidv4();
-  todos.push({ ...req.body, id: uniqueId });
-  res.json(uniqueId);
+  fs.readFile("todos.json", "utf-8", (err, data) => {
+    if (err) throw err;
+    todos = data ? JSON.parse(data) : [];
+    const uniqueId = uuidv4();
+    todos.push({ ...req.body, id: uniqueId });
+    fs.writeFile("todos.json", JSON.stringify(todos), (err) => {
+      if (err) throw err;
+      res.json(uniqueId);
+    });
+  });
 });
 
 app.put("/todos/:id", (req, res) => {
-  let filteredTodo = todos.find((todo) => todo.id == req.params.id);
-  if (filteredTodo) {
-    for (let key in req.body) {
-      filteredTodo[key] = req.body[key];
-    }
-    res.sendStatus(200);
-  } else res.sendStatus(404);
+  fs.readFile("todos.json", "utf-8", (err, data) => {
+    if (err) throw err;
+    if (data) {
+      let index = JSON.parse(data).findIndex(
+        (todo) => todo.id == req.params.id
+      );
+      if (index >= 0) {
+        for (let key in req.body) {
+          todos[index][key] = req.body[key];
+        }
+        fs.writeFile("todos.json", JSON.stringify(todos), (err) => {
+          if (err) throw err;
+          res.sendStatus(200);
+        });
+      } else res.sendStatus(404);
+    } else res.sendStatus(404);
+  });
 });
 app.delete("/todos/:id", (req, res) => {
-  let filteredTodoIndex = todos.findIndex((todo) => todo.id == req.params.id);
-  if (filteredTodoIndex >= 0) {
-    todos.splice(filteredTodoIndex, 1);
-    res.sendStatus(200);
-  } else res.sendStatus(404);
+  fs.readFile("todos.json", "utf-8", (err, data) => {
+    if (err) throw err;
+    if (data) {
+      let index = JSON.parse(data).findIndex(
+        (todo) => todo.id == req.params.id
+      );
+      if (index >= 0) {
+        todos.splice(filteredTodoIndex, 1);
+      }
+      fs.writeFile("todos.json", JSON.stringify(todos), (err) => {
+        if (err) throw err;
+        res.sendStatus(200);
+      });
+    } else res.sendStatus(404);
+  });
 });
 module.exports = app;
