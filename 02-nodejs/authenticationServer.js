@@ -28,10 +28,64 @@
 
   Testing the server - run `npm run test-authenticationServer` command in terminal
  */
-
-const express = require("express")
+const { v4: uuidv4 } = require("uuid");
+const express = require("express");
+const bodyParser = require("body-parser");
 const PORT = 3000;
 const app = express();
+app.use(bodyParser.json());
 // write your logic here, DONT WRITE app.listen(3000) when you're running tests, the tests will automatically start the server
+let users = [];
+app.post("/signup", (req, res) => {
+  if (users.findIndex((user) => user.username === req.body.username) >= 0) {
+    res.status(400);
+    res.send("Username already exists");
+  } else {
+    const uniqueId = uuidv4();
+    users.push({ ...req.body, id: uniqueId });
+    res.status(201);
+    res.send("Signup successful");
+  }
+});
 
+app.post("/login", (req, res) => {
+  let user = req.body;
+  let userFound = checkUserExists(user);
+
+  if (userFound) {
+    res.json({
+      firstName: userFound.firstName,
+      lastName: userFound.lastName,
+      email: userFound.email,
+    });
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+function checkUserExists(user) {
+  let userFound = null;
+  for (let i = 0; i < users.length; i++) {
+    if (users[i].email === user.email && users[i].password === user.password) {
+      userFound = users[i];
+      break;
+    }
+  }
+  return userFound;
+}
+
+app.get("/data", (req, res) => {
+  let user = {};
+  user["email"] = req.headers.email;
+  user["password"] = req.headers.password;
+  let userFound = checkUserExists(user);
+  if (userFound) {
+    res.json({ users });
+  } else {
+    res.sendStatus(401);
+  }
+});
+// app.listen(PORT, () => {
+//   console.log(`Example app listening on port ${PORT}`);
+// });
 module.exports = app;

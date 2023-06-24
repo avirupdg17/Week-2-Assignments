@@ -39,11 +39,46 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-const express = require('express');
-const bodyParser = require('body-parser');
-
+const express = require("express");
+const { v4: uuidv4 } = require("uuid");
+const bodyParser = require("body-parser");
+const fs = require("fs");
+const PORT = 3000;
 const app = express();
 
 app.use(bodyParser.json());
+app.listen(PORT);
+let todos = [];
+app.get("/todos", (req, res) => {
+  res.json(todos);
+});
 
+app.get("/todos/:id", (req, res) => {
+  let filteredTodo = todos.find((todo) => todo.id == req.params.id);
+  if (filteredTodo) res.json({ ...filteredTodo });
+  else res.sendStatus(404);
+});
+
+app.post("/todos", (req, res) => {
+  const uniqueId = uuidv4();
+  todos.push({ ...req.body, id: uniqueId });
+  res.json(uniqueId);
+});
+
+app.put("/todos/:id", (req, res) => {
+  let filteredTodo = todos.find((todo) => todo.id == req.params.id);
+  if (filteredTodo) {
+    for (let key in req.body) {
+      filteredTodo[key] = req.body[key];
+    }
+    res.sendStatus(200);
+  } else res.sendStatus(404);
+});
+app.delete("/todos/:id", (req, res) => {
+  let filteredTodoIndex = todos.findIndex((todo) => todo.id == req.params.id);
+  if (filteredTodoIndex >= 0) {
+    todos.splice(filteredTodoIndex, 1);
+    res.sendStatus(200);
+  } else res.sendStatus(404);
+});
 module.exports = app;
